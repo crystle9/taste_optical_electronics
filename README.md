@@ -11,23 +11,24 @@ ___状态：程序框架还要做重大调整，先不要使用___
 1. OLED
  - D0   数字I/O   推挽   CLK   P0.0
  - D1	数字I/O	  推挽	 MOSI  P0.2
- - RST	数字I/O	  推挽	 I/O   P1.6
- - DC	数字I/O	  推挽	 I/O   P1.7
+ - RST	数字I/O	  推挽	 I/O   P1.5
+ - DC	数字I/O	  推挽	 I/O   P1.6
 - 驱动芯片
  - IN1  数字I/O   推挽   CEX0  P0.4
  - DJ1  数字I/O   推挽   CEX1  P0.5
 - 欧姆龙
- - 黑   数字I/O   漏开   T0    P0.6
+ - 黑   数字I/O   漏开   T0    P1.3
 - 八路循迹、防撞与起停
  - Di   数字I/O   漏开   I/O   P2
- - D7	数字I/O	  漏开	 EX6   P1.5
+ - D7	数字I/O	  漏开	 EX6   P3.6
 - 激光头1
  - AD	模拟输入  x	 AIN1  P1.1
  - IO	数字I/O	  漏开	 CEX2  P0.6
 - 激光头2
  - AD	模拟输入  x	 AIN2  P1.2
  - IO	数字I/O	  漏开	 T1    P1.4
-
+- c8051F020
+ - P0.7 CEX3	  推挽   I/O   P1.7
 #### 与驱动芯片
 1. 电机
  - pin1  OUT1
