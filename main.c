@@ -17,7 +17,7 @@ void PCA0_Init(void);
 
 void main (void) 
 {
-  unsigned char reflection;
+  int reflection, status, omron_count;
   
   WDTCN = 0xDE;                       // disable watchdog timer
   WDTCN = 0xAD;
@@ -29,15 +29,27 @@ void main (void)
   SPI0_Init();
   LED_Init();                         // Initialize OLED
   Sensors_Init();
+  Rudder_Init();
+  Motor_Init();
   Test_Helper_Init();
 
   EA = 1;                             // Enable global interrupts
-  PUT_LINE("OMRON:",get_OMRON_count());
-  PUT_LINE("infrared:",get_infrared_status());
-  PUT_LINE("reflection:",get_LD_reflection());
+
+  reflection = 0;
+  status = 0;
+  status += get_infrared_status();
+  reflection += get_LD_reflection();
+  
+  PUT_LINE("OMRON:",omron_count);
+  PUT_LINE("infrared:",status);
+  PUT_LINE("reflection:",reflection);
   while (1) {                         // Spin forever
-    reflection = get_LD_reflection();
+    reflection = 0;
+    status = 0;
+    status += get_infrared_status();
+    reflection += get_LD_reflection();
     UPDATE_VALUE(2,reflection);
+    UPDATE_VALUE(1,status);
     delay1ms(250);
   }
 }
@@ -80,7 +92,12 @@ void PORT_Init (void)
   //P2MDOUT = 0x00;
   //P3MDOUT = 0x00;
 
-  P1MDIN = 0x03;
+  P0 = 0x00;
+  P1 = 0x9F;
+  P2 = 0xFF;
+  P3 = 0xC0;
+
+  P1MDIN = 0xFC;
   
   XBR0 = 0x22;
   XBR1 = 0x68;

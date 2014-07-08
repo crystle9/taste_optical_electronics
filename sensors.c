@@ -17,17 +17,23 @@ int get_OMRON_count(void)
   return 0;
 }
 
-int get_LD_reflection(void)
+unsigned char get_LD_reflection(void)
 {
-  ADC1CN &= 0xDF;
-  ADC1CN |= 0x10;
-  while(!(ADC1CN & 0x20));
-  return (int*)ADC1;
+  unsigned char reflection;
+  
+  ADC1CN &= 0xDF; //AD1INT = 0
+  ADC1CN |= 0x10; //AD1BUSY = 1, start conversion
+  while(!(ADC1CN & 0x20)); //until AD1INT == 1
+  reflection = ADC1;
+  return reflection;
 }
 
 unsigned char get_infrared_status(void)
 {
-  return P2;
+  unsigned char status;
+  status = P2;
+  status &= 0x0F;
+  return status;
 }
 
 void init_OMRON(void)
@@ -37,8 +43,8 @@ void init_OMRON(void)
 
 void init_LD(void)
 {
+  AMX1SL = 0x01;
   ADC1CF = 0x18;
-  AMX1SL = 0x00;
   ADC1CN = 0x80;
 }
 
