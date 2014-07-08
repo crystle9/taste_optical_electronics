@@ -2,8 +2,12 @@
 ___状态：在做ADC，遇到问题。PWM可以边做___
 
 ### 功能模块
-1. 速度测量与控制（电机）：motor.c
-- 角度测量与控制（舵机）：rudder.c
+1.电机控制：motor.c
+- 舵机控制：rudder.c
+- 传感器：sensors.c
+- 显示：oled.c
+- 调试：test_helper.c
+- 晶振：osi.c
 
 ### 硬件连接
 
