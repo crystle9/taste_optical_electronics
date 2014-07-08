@@ -1,31 +1,24 @@
 #include <c8051f020.h>
-#include <stdio.h>
 #include "rudder.h"
-#include "oled.h"
 
-int get_current_angel(void){
-  return 50;
-}
-
-int calc_angel(int angel){
-  return angel + 10;  
-}
-
-void set_angel(int angel){
+void init_Timer0(void){
   
 }
 
-void display_angels(){
-  int xdata angel;
-  unsigned char xdata current_angel[16];
-  unsigned char xdata pid_angel[16];
+void init_PCA0(void){
+  
+}
 
-  angel = get_current_angel();
-  sprintf(current_angel, "%d", angel);
-  sprintf(pid_angel, "%d", calc_angel(angel));
-  LED_Fill(0x00);
-  LED_P8x16Str(0, 0, "current_angel: ");
-  LED_P8x16Str(2, 1, current_angel);
-  LED_P8x16Str(0, 2, "pid_angel: ");
-  LED_P8x16Str(2, 3, pid_angel);
+void init_cex0(void){
+  
+}
+
+void Rudder_Init(void){
+  init_Timer0(); //PCA0的时钟源
+  init_PCA0(); //cex0 和 cex1 PWM输出，要求PWM周期为20ms
+  init_cex0(); //设置初始角度(0.5ms,2.5ms)
+}
+
+void set_angel(unsigned char angel){
+  
 }

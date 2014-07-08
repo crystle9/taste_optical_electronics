@@ -2,9 +2,11 @@
 #include "delay.h"
 #include "osi.h"
 
+#define DELAY_1S_COUNT Crystal_Clock/12/256/1000
 #define DELAY_1MS_COUNT Crystal_Clock/12/256/1000
 #define DELAY_10US_COUNT Crystal_Clock/12/100000
 
+#if 1
 void delay1ms(unsigned char count)
 {
   unsigned char i;
@@ -33,3 +35,4 @@ void delay10us(unsigned char count)
   TR0 = 0;
   TF0 = 0;
 }
+#endif

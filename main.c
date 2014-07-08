@@ -4,27 +4,20 @@
 #include "oled.h"
 #include "rudder.h"
 #include "motor.h"
+#include "sensors.h"
+#include "test_helper.h"
 
-#define LED_interrupt_count Crystal_Clock/12/65536
 #define SPI_CLOCK 320000 // 320kHz
 
-/* Timer2 */
-sfr16 RCAP2 = 0xCA;
-sfr16 TMR2 = 0xCC;
-
-sbit LED = P3^3;
+unsigned char current_line; // used by test_helper module
 
 void Port_Init (void);
-void Timer2_Init (void);
 void SPI0_Init(void);
-
-void OLED_Display(void); 
-
-void Timer2_ISR (void);
+void PCA0_Init(void);
 
 void main (void) 
 {
-  int speed, angel;
+  unsigned char reflection;
   
   WDTCN = 0xDE;                       // disable watchdog timer
   WDTCN = 0xAD;
@@ -35,17 +28,17 @@ void main (void)
   Timer2_Init ();                     // Timer2: interrupt to blink LED.
   SPI0_Init();
   LED_Init();                         // Initialize OLED
+  Sensors_Init();
+  Test_Helper_Init();
 
   EA = 1;                             // Enable global interrupts
-
-  //OLED_Display();
-  display_angels();
-  display_speeds();
+  PUT_LINE("OMRON:",get_OMRON_count());
+  PUT_LINE("infrared:",get_infrared_status());
+  PUT_LINE("reflection:",get_LD_reflection());
   while (1) {                         // Spin forever
-    speed = get_current_speed();
-    angel = get_current_angel();
-    set_speed(calc_speed(speed));
-    set_angel(calc_angel(angel));
+    reflection = get_LD_reflection();
+    UPDATE_VALUE(2,reflection);
+    delay1ms(250);
   }
 }
 
@@ -58,17 +51,39 @@ void main (void)
 //
 // Configure the Crossbar and GPIO ports.
 //
-// P0.0   digital   push-pull     /SYSCLK
+/*
+ - D0   数字I/O   推挽   CLK   P0.0    OLED
+ - D1	数字I/O	  推挽	 MOSI  P0.2
+ - IN1  数字I/O   推挽   CEX0  P0.4    rudder PWM0
+ - DJ3  数字I/O   推挽   CEX1  P0.5    motor PWM1
+ - ?    ?	  ?      CEX2  P0.6
+ - ?    ?	  ?      CEX3  P0.7
+ - AD0	模拟输入  漏开	 AIN1  P1.0    LD0
+ - ?	模拟输入  漏开	 AIN2  P1.1
+ - LD2	数字I/O	  漏开	 T1    P1.2    count trees
+ - 黑   数字I/O   漏开   T2    P1.3    OMRON
+ - LD1  数字I/O   漏开   T2EX  P1.4    get off tunnel signal
+ - RST	数字I/O	  推挽	 I/O   P1.5    OLED reset
+ - DC	数字I/O	  推挽	 I/O   P1.6    OLED data/command
+ - D3-6 数字I/O   漏开   I/O   P2:0-3  infrared
+ - LD1	数字I/O	  漏开	 EX6   P3.6    get into tunnel signal
+ - D7	数字I/O	  漏开	 EX7   P3.7    stop signal
+
+ */
 // P3.3   digital   push-pull     LED
 //
 //-----------------------------------------------------------------------------
 void PORT_Init (void)
 {
-  P0MDOUT |= 0x35;                    // Enable CLK,MOSI,RST,DC as a push-pull output
+  P0MDOUT = 0x35;
+  P1MDOUT = 0x60;
+  //P2MDOUT = 0x00;
+  //P3MDOUT = 0x00;
 
-  P3MDOUT |= 0x08;                    // Enable LED as a push-pull output
-
-  XBR0 = 0x02;                        // Route SPI0 to a port pin
+  P1MDIN = 0x03;
+  
+  XBR0 = 0x22;
+  XBR1 = 0x68;
   XBR2 = 0x40;                        // Enable crossbar and weak pull-ups
 }
 
@@ -83,90 +98,8 @@ void SPI0_Init()
 }
 
 //-----------------------------------------------------------------------------
-// Timer2_Init ()
-//-----------------------------------------------------------------------------
-//
-// Return Value : None
-// Parameters   : None
-//
-// Configure Timer2 to 16-bit auto-reload and generate an interrupt after the
-// maximum possible time (TMR2RL = 0x0000).
-//
-//-----------------------------------------------------------------------------
-void Timer2_Init (void)
-{
-  T2CON = 0x00;                       // Stop Timer2; Clear TF2;
-  // auto-reload mode
-
-  CKCON &= ~0x20;                     // use SYSCLK/12 as timebase
-
-  RCAP2 = 0x0000;                     // Init reload value
-  TMR2 = 0xffff;                      // Set to reload immediately
-
-  ET2 = 1;                            // Enable Timer2 interrupts
-
-  TR2 = 1;                            // Start Timer2
-}
-
-void OLED_Display(void)
-{
-  unsigned int i;
-
-  LED_P14x16Str(25, 0, (unsigned char*)"信意电子科技");
-  LED_P8x16Str(0, 2, (unsigned char*)" http://xydz123.taobao.com");
-  delay1ms(4);
-
-  LED_Fill(0x00);    
-  LED_P14x16Str(30, 1, (unsigned char*)"屏幕测试");
-
-  for (i = 0; i <= 100; i++)
-    {
-      delay10us(4);
-      LED_PrintChar(45, 5, (char)i);        
-    }
-  delay1ms(8);
-
-  LED_Fill(0xFF); //点亮全屏
-  delay1ms(8);
-
-  LED_Fill(0x00); //黑屏
-  delay1ms(2);
-
-  LED_P8x16Str(10, 2, (unsigned char*)"Test Finished!");
-
-  return;
-}
-
-
-
-//-----------------------------------------------------------------------------
 // Interrupt Service Routines
 //-----------------------------------------------------------------------------
-
-//-----------------------------------------------------------------------------
-// Timer2_ISR
-//-----------------------------------------------------------------------------
-//
-// This routine changes the state of the LED whenever Timer2 overflows.
-//
-//-----------------------------------------------------------------------------
-void Timer2_ISR (void) interrupt 5
-{
-  static unsigned int count = 0;
-
-  TF2 = 0;                            // Clear Timer2 interrupt flag
-
-  if (count == LED_interrupt_count)
-    {
-      LED = ~LED;                      // Change state of LED
-
-      count = 0;
-    }
-  else
-    {
-      count++;
-    }
-}
 
 //-----------------------------------------------------------------------------
 // End Of File
