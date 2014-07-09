@@ -6,7 +6,7 @@
 #define DELAY_1MS_COUNT Crystal_Clock/12/256/1000
 #define DELAY_10US_COUNT Crystal_Clock/12/100000
 
-#if 1
+#if 0
 void delay1ms(unsigned char count)
 {
   unsigned char i;

@@ -43,9 +43,10 @@ void init_OMRON(void)
 
 void init_LD(void)
 {
-  AMX1SL = 0x01;
-  ADC1CF = 0x18;
+  AMX1SL = 0x00;
+  ADC1CF = 0x00;
   ADC1CN = 0x80;
+  REF0CN = 0x02;
 }
 
 void init_infrared(void)
