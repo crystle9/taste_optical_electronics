@@ -4,8 +4,8 @@
 void init_Timer0(void)
 {
   TMOD |= 0x02;   //16位定时器方式
-  TL0  = 0x6D;
-  TH0  = 0x6D;    //50Hz的溢出频率
+  TL0  = 0x70;
+  TH0  = 0x70;    //50Hz的溢出频率
   //ET0  = 1;	     //允许定时器0中断
   //PT0=1;	 //优先级待定
   TR0  = 1;	
@@ -37,7 +37,7 @@ void set_angel(unsigned char angel)
   ang_temp = (255-angel)*18/256+228; //60度(228)到-60度(246)
   PCA0CPH0 = ang_temp;
 }
-
+/*
 void Timer0INT(void) interrupt 1 using 3
 {
   TR0=0;
@@ -45,3 +45,4 @@ void Timer0INT(void) interrupt 1 using 3
   TH0=0x80;  //重装载
   TR0=1;
 }
+*/

@@ -8,7 +8,7 @@
 #include "test_helper.h"
 
 #define SPI_CLOCK 320000 // 320kHz
-#define MAX_REFLECTION 252
+#define MAX_REFLECTION 126
 
 unsigned char current_line; // used by test_helper module
 
@@ -21,7 +21,7 @@ void PCA0_Init(void);
 
 void main (void) 
 {
-  int reflection, status, LDs_count;
+  int reflection, status, LDs_count,omron_count;
   unsigned char angel,stat;
   
   WDTCN = 0xDE;                       // disable watchdog timer
@@ -61,19 +61,22 @@ void main (void)
     reflection += get_LD_reflection();
     LDs_count += TL1 + LD2_count;
 
-    if(status && 0x06){ // 0b0110
-      angel = get_LD_reflection();
-      if(status && 0x04) // 0b0100
-	{
-	  // turn left
-	  set_angel(angel);
-	}
-      else
-	{
-	  // turn right
-	  set_angel(0xFF-angel);
-	}
-    }
+    angel = MAX_REFLECTION - get_LD_reflection();
+    switch (status & 0x06)
+      {
+      case 0x02:
+	set_angel(0x80 + angel);
+	break;
+      case 0x04:
+	set_angel(0x80 - angel);
+	break;
+      case 0x00:
+	set_angel(0x80 + angel);
+	break;
+      default:
+	set_angel(0x80);
+	break;
+      }
 
     UPDATE_VALUE(1,status);
     UPDATE_VALUE(2,reflection);
