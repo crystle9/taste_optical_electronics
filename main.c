@@ -4,7 +4,7 @@
 #include "rudder.h"
 #include "motor.h"
 #include "sensors.h"
-//#include "measurement.h"
+#include "measurement.h"
 #include "test_helper.h"
 
 #define SPI_CLOCK 320000 // 320kHz
@@ -21,8 +21,9 @@ void PCA0_Init(void);
 
 void main (void) 
 {
-  int reflection, status, LDs_count,omron_count;
-  unsigned char angel,stat;
+  int reflection, status, LDs_count,omron_count,i;
+  char angel;
+  unsigned char stat;
   
   WDTCN = 0xDE;                       // disable watchdog timer
   WDTCN = 0xAD;
@@ -35,7 +36,7 @@ void main (void)
   Sensors_Init();
   Rudder_Init();
   Motor_Init();
-  //Measurement_Init();
+  Measurement_Init();
   Test_Helper_Init();
 
   EA = 1;                             // Enable global interrupts
@@ -52,6 +53,7 @@ void main (void)
   PUT_LINE("reflection:",reflection);
   PUT_LINE("LDs_count:",LDs_count);
   PUT_LINE("Tunnel:",tunnel_length[LD2_count]);
+
   while (1) {                         // Spin forever
     status = 0;
     reflection = 0;
@@ -62,19 +64,34 @@ void main (void)
     LDs_count += TL1 + LD2_count;
 
     angel = MAX_REFLECTION - get_LD_reflection();
-    switch (status & 0x06)
+    switch (status)
       {
-      case 0x02:
-	set_angel(0x80 + angel);
+      case 0x0B: // 0b1011
+	set_angel(-angel);
 	break;
-      case 0x04:
-	set_angel(0x80 - angel);
+      case 0x07: // 0b0111
+	set_angel(-128);
 	break;
-      case 0x00:
-	set_angel(0x80 + angel);
+      case 0x03: // 0b0011
+	set_angel(-128);
+	break;
+      case 0x01: // 0b0001
+	set_angel(-128);
+	break;
+      case 0x0D: // 0b1101
+	set_angel(angel);
+	break;
+      case 0x0E: // 0b1110
+	set_angel(127);
+	break;
+      case 0x0C: // 0b1100
+	set_angel(127);
+	break;
+      case 0x08: // 0b1000
+	set_angel(127);
 	break;
       default:
-	set_angel(0x80);
+	set_angel(0);
 	break;
       }
 

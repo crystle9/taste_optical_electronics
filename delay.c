@@ -1,12 +1,12 @@
 #include <c8051F020.h>
 #include "delay.h"
-#include "osi.h"
 
+#if 0
+#include "osi.h"
 #define DELAY_1S_COUNT Crystal_Clock/12/256/1000
 #define DELAY_1MS_COUNT Crystal_Clock/12/256/1000
 #define DELAY_10US_COUNT Crystal_Clock/12/100000
 
-#if 0
 void delay1ms(unsigned char count)
 {
   unsigned char i;

@@ -28,6 +28,7 @@ init_EX6(void)
 void Measurement_Init(void)
 {
   LD2_count = 0;
+  tunnel_length[0] = 0;
   init_Timer1();
   init_Timer2();
   init_EX6();

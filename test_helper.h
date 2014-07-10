@@ -11,6 +11,7 @@ extern unsigned char current_line;
 
 void Test_Helper_Init(void);
 void _put_line(int digit);
+void general_delay(void);
 
 #endif
 

@@ -1,6 +1,8 @@
 #include <c8051F020.h>
 #include "rudder.h"
 
+#define MAX_ANGEL 30
+
 void init_Timer0(void)
 {
   TMOD |= 0x02;   //16位定时器方式
@@ -30,11 +32,11 @@ void Rudder_Init(void)
   init_cex0(); //设置初始角度(0.5ms-90度,2.5ms90度)
 }
 
-void set_angel(unsigned char angel)
+void set_angel(char angel)
 {
   unsigned char ang_temp;    //暂存计算得到的初值	
 
-  ang_temp = (255-angel)*18/256+228; //60度(228)到-60度(246)
+  ang_temp = angel * MAX_ANGEL / 900 + 237; // -MAX_ANGEL -> MAX_ANGEL
   PCA0CPH0 = ang_temp;
 }
 /*
