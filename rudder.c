@@ -36,7 +36,7 @@ void set_angel(char angel)
 {
   unsigned char ang_temp;    //暂存计算得到的初值	
 
-  ang_temp = angel * MAX_ANGEL / 900 + 237; // -MAX_ANGEL -> MAX_ANGEL
+  ang_temp = angel * MAX_ANGEL / 900 + 237; // -MAX_ANGEL -> MAX_ANGEL 
   PCA0CPH0 = ang_temp;
 }
 /*

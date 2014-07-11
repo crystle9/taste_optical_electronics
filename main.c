@@ -8,12 +8,18 @@
 #include "test_helper.h"
 
 #define SPI_CLOCK 320000 // 320kHz
-#define MAX_REFLECTION 126
+#define MAX_REFLECTION 96
+#define M_ANGEL 48
 
 unsigned char current_line; // used by test_helper module
 
 unsigned char LD2_count; // used by measurement module
 unsigned int xdata tunnel_length[20];
+
+sbit LEFT = P2^4;
+sbit RIGHT = P2^5;
+sbit P21 = P2^1;
+sbit P22 = P2^2;
 
 void Port_Init (void);
 void SPI0_Init(void);
@@ -24,6 +30,7 @@ void main (void)
   int reflection, status, LDs_count,omron_count,i;
   char angel;
   unsigned char stat;
+  char flag;
   
   WDTCN = 0xDE;                       // disable watchdog timer
   WDTCN = 0xAD;
@@ -64,10 +71,34 @@ void main (void)
     LDs_count += TL1 + LD2_count;
 
     angel = MAX_REFLECTION - get_LD_reflection();
-    switch (status)
+
+    flag = 0;
+    if(LEFT && !RIGHT){
+      flag = -1; // go right
+    }
+    if(!LEFT && RIGHT){
+      flag = 1; // go left
+    }
+
+    if((angel > M_ANGEL) && flag){
+      set_angel(flag * 127);
+      while(1){
+	stat = get_infrared_status();
+	if((RIGHT == 0)&&(flag > 0) || (LEFT == 0)&&(flag < 0))
+	  {
+	    set_angel(-flag * 127);
+	    while(P21 && P22);
+	    break;
+	  }
+      }
+    }
+    
+    stat = get_infrared_status();
+    angel = MAX_REFLECTION - get_LD_reflection();
+    switch (stat)
       {
       case 0x0B: // 0b1011
-	set_angel(-angel);
+	set_angel(-angel/2);
 	break;
       case 0x07: // 0b0111
 	set_angel(-128);
@@ -79,7 +110,7 @@ void main (void)
 	set_angel(-128);
 	break;
       case 0x0D: // 0b1101
-	set_angel(angel);
+	set_angel(angel/2);
 	break;
       case 0x0E: // 0b1110
 	set_angel(127);
@@ -94,6 +125,8 @@ void main (void)
 	set_angel(0);
 	break;
       }
+
+    
 
     UPDATE_VALUE(1,status);
     UPDATE_VALUE(2,reflection);
