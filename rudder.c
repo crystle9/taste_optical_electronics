@@ -32,12 +32,13 @@ void Rudder_Init(void)
   init_cex0(); //设置初始角度(0.5ms-90度,2.5ms90度)
 }
 
-void set_angel(char angel)
+void set_angel(int angel)
 {
-  unsigned char ang_temp;    //暂存计算得到的初值	
-
-  ang_temp = angel * MAX_ANGEL / 900 + 237; // -MAX_ANGEL -> MAX_ANGEL 
-  PCA0CPH0 = ang_temp;
+  char ang;    //暂存计算得到的初值
+  
+  ang = angel > 127 ? 127 : angel;
+  ang = angel < -128 ? -128 : angel;
+  PCA0CPH0 = ang * MAX_ANGEL / 900 + 236; // -MAX_ANGEL -> MAX_ANGEL 
 }
 /*
 void Timer0INT(void) interrupt 1 using 3

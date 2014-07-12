@@ -12,11 +12,6 @@ void Sensors_Init()
   init_infrared();
 }
 
-int get_OMRON_count(void)
-{
-  return 0;
-}
-
 unsigned char get_LD_reflection(void)
 {
   unsigned char reflection;
