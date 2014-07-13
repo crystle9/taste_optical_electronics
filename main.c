@@ -5,23 +5,24 @@
 #include "motor.h"
 #include "sensors.h"
 #include "measurement.h"
+//#include "display.h"
 #include "test_helper.h"
 
 #define SPI_CLOCK 320000 // 320kHz
-#define MAX_REFLECTION 102
+#define MAX_REFLECTION 103
 #define RUDDER_FIX 10
-#define M_ANGEL 75
+#define MAX_ANGEL 75
 
 unsigned char current_line; // used by test_helper module
 
 unsigned char LD2_count; // used by measurement module
 unsigned int xdata tunnel_length[20];
 
-#define LEFT3 P24
-#define LEFT2 P20
-#define LEFT1 P21
-#define RIGHT1 P22
-#define RIGHT2 P23
+#define LEFT3 P20
+#define LEFT2 P21
+#define LEFT1 P22
+#define RIGHT1 P23
+#define RIGHT2 P24
 #define RIGHT3 P25
 #define DIRECTION P30
 
@@ -42,7 +43,7 @@ void main (void)
   int reflection,LDs_count,omron_count;
 
   char angel;
-  unsigned char reflect;
+  unsigned char reflect,status;
   char flag;
   
   WDTCN = 0xDE;                       // disable watchdog timer
@@ -69,30 +70,37 @@ void main (void)
   PUT_LINE("angel:",angel);
 
   while (1) {                         // Spin forever
-    // go straight forward: PID
     DIRECTION = 0;
     PCA0CPH1 = 0xD0;
     while (1) {
       // dectecting
       reflect = get_LD_reflection();
 
-      if(MAX_REFLECTION > reflect)
-	angel = MAX_REFLECTION - reflect;
-      else
-	angel = 0;
       flag = 0;
       UPDATE_VALUE(4,angel);
-      if(angel > M_ANGEL){
-	if(!LEFT3)
+
+      // conner emergency
+      if(reflect < 30){
+	if(!LEFT3 && RIGHT3)
 	  flag = 1;
-	if(!RIGHT3)
+	if(!RIGHT3 && LEFT3)
 	  flag = -1;
 	if(flag)
 	  break;
       }
+
+      // go straight forward:
+      if(MAX_REFLECTION > reflect)
+	angel = MAX_REFLECTION - reflect;
+      else
+	angel = 0;
       if(!LEFT1 || !LEFT2 || !LEFT3)
 	flag = 1;
-      if(!RIGHT1 || !RIGHT2 || !RIGHT3)
+      if(!RIGHT1 && LEFT2)
+	flag = -1;
+      if(!RIGHT2 && LEFT3)
+	flag = -1;
+      if(!RIGHT3)
 	flag = -1;
       set_angel(flag * angel + RUDDER_FIX);
 
@@ -106,26 +114,53 @@ void main (void)
       UPDATE_VALUE(3,tunnel_length[LD2_count]);
     }
 
-    // get through cornner
-    DIRECTION = 1;
-    PCA0CPH1 = 0x3F;
-    Clear_OMRON_Count();
-    set_angel(-flag * 127);
-    while(1){
-      omron_count = Get_OMRON_Count();
-      UPDATE_VALUE(0,omron_count);
-      if(omron_count >= 320) //1062
-	break;
-    }
-    DIRECTION = 0;
-    PCA0CPH1 = 0xC0;
-    Clear_OMRON_Count();
-    set_angel(flag * 127);
-    while(1){
-      omron_count = Get_OMRON_Count();
-      UPDATE_VALUE(0,omron_count);
-      if(omron_count >= 600)//2124
-	break;
+    if(reflect < 10){ // 60 degree
+      set_angel(flag * 127);
+      Clear_OMRON_Count();
+      while(omron_count <= 200);
+      while(1){
+	if(flag > 0 && !LEFT1)	{
+	  while(!RIGHT1);
+	  break;
+	}
+	if(flag < 0 && !RIGHT1)	{
+	  while(!LEFT1);
+	  break;
+	}
+      }
+    }else{ // 90 degree
+      DIRECTION = 1;
+      PCA0CPH1 = 0x2F;
+      Clear_OMRON_Count();
+      set_angel(-flag * 127);
+      while(1){
+	omron_count = Get_OMRON_Count();
+	UPDATE_VALUE(0,omron_count);
+	if(omron_count >= 410) //1062
+	  break;
+      }
+      DIRECTION = 0;
+      PCA0CPH1 = 0xD0;
+      //Clear_OMRON_Count();
+      set_angel(flag * 127);
+
+      // escape from conner
+      while(1){
+	if(flag > 0 && !LEFT1)	{
+	  while(!RIGHT1);
+	  break;
+	}
+	if(flag < 0 && !RIGHT1)	{
+	  while(!LEFT1);
+	  break;
+	}
+	/*
+	  omron_count = Get_OMRON_Count();
+	  UPDATE_VALUE(0,omron_count);
+	  if(omron_count >= 1600)//2124
+	  break;
+	*/
+      }
     }
   }
 }

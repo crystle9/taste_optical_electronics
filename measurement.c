@@ -23,13 +23,6 @@ init_Timer4(void)
   T4CON = 0x06; // CT4,TR4 = 1
 }
 
-init_EX6(void)
-{
-  P3IF = 0x04; //上升沿触发
-  EIP2 |= 0x10; //高优先
-  EIE2 |= 0x10; //允许中断
-}
-
 init_EX7(void)
 {
   P3IF |= 0x08;
@@ -44,7 +37,6 @@ void Measurement_Init(void)
   init_Timer1();
   init_Timer2();
   init_Timer4();
-  init_EX6();
   init_EX7();
 }
 
@@ -70,8 +62,6 @@ void Clear_OMRON_Count(void)
   T4CON = 0x06; // CT4,TR4 = 1
 }
 
-
-//void Get_Into_Tunnel_ISR(void) interrupt 18
 void Get_Into_Tunnel_ISR(void) interrupt 19
 {
   TH2 = 0x00;
