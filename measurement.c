@@ -1,6 +1,8 @@
 #include <c8051F020.h>
 #include "measurement.h"
 
+sbit P31 = P3^1;
+
 init_Timer1(void)
 {
   TMOD |= 0x60; //8位计数器
@@ -11,10 +13,10 @@ init_Timer1(void)
 
 init_Timer2(void)
 {
-  CPRL2 = 1; //选择捕捉
+  CPRL2 = 0; //重装载
   CT2 = 1; //计数T2引脚脉冲
-  EXEN2 = 1; //T2EX引脚负跳变捕捉
-  ET2 = 1; //允许中断
+  EXEN2 = 0; //T2EX引脚负跳变捕捉
+  ET2 = 0; //允许中断
   TR2 = 0;
 }
 
@@ -23,30 +25,33 @@ init_Timer4(void)
   T4CON = 0x06; // CT4,TR4 = 1
 }
 
+init_EX6(void)
+{
+  P3IF = 0x00;
+  EIP2 |= 0x10;
+  EIE2 |= 0x10;
+  tunnel_count = 0;
+}
+
 init_EX7(void)
 {
-  P3IF |= 0x08;
-  EIP2 |= 0x20;
+  P3IF = 0x00;
   EIE2 |= 0x20;
+  LD2_count = 0;
 }
 
 void Measurement_Init(void)
 {
-  LD2_count = 0;
-  tunnel_length[0] = 0;
+  unsigned char i;
+
+  for(i = 0; i < 20; i++)
+    tunnel_length[i] = 0;
+  
   init_Timer1();
   init_Timer2();
   init_Timer4();
+  init_EX6();
   init_EX7();
-}
-
-void Leave_Tunnel_ISR(void) interrupt 5
-{
-  EXF2 = 0;
-  TR2 = 0;
-  tunnel_length[LD2_count] = RCAP2H*256 + RCAP2L;
-  if(++LD2_count > 19)
-    LD2_count = 0;
 }
 
 int Get_OMRON_Count(void)
@@ -62,10 +67,32 @@ void Clear_OMRON_Count(void)
   T4CON = 0x06; // CT4,TR4 = 1
 }
 
-void Get_Into_Tunnel_ISR(void) interrupt 19
+void Tunnel_ISR(void) interrupt 18
 {
-  TH2 = 0x00;
-  TL2 = 0x00;
-  TR2 = 1;
-  P3IF = 0x08;
+  if(P3IF & 0x04){
+    // leave tunnel
+    TR2 = 0; // stop counting OMRON
+    
+    tunnel_length[tunnel_count] = TH2*256 + TL2;
+    if(++tunnel_count > 4)
+      P31 = 0;
+    
+    TR1 = 1; // start LD1 counting(Timer1)
+    EIE2 |= 0x20; // enable LD2 counting(EX7)
+    P3IF = 0x00; // clear interrupt flag, waiting next tunnel
+  }else{
+    // get into tunnel
+    TH2 = 0x00;
+    TL2 = 0x00;
+    TR2 = 1; // start counting OMRON
+    TR1 = 0; // stop LD1 counting
+    EIE2 &= 0xDF; // disable LD2 counting
+    P3IF = 0x04; // clear interrupt flag, waiting exit
+  }
+}
+
+void LD2_Find_a_Tree_ISR(void) interrupt 19
+{
+  LD2_count++;
+  P3IF = 0x00;
 }
